@@ -1,0 +1,16 @@
+{
+  "name": "super_player",
+  "version": "12.2.0",
+  "description": "Tencent Cloud Super Player Flutter Plugin for HarmonyOS",
+  "main": "Index.ets",
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "@ohos/flutter_ohos": "file:./har/flutter.har",
+    "liteavsdk": "file:libs/LiteAVSDK_Professional_13.2.0.8729.har",
+//    "flutter_native_arm64_v8a": "",
+//    "flutter_native_x86_64": "" "",
+//    "flutter_native_x86_64": ""
+  },
+  "devDependencies": {}
+}

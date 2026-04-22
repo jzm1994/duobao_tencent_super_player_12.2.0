@@ -1,0 +1,28 @@
+{
+	"app": {
+		"bundleName": "com.duobao9.duobao.hm",
+		"debug": true,
+		"versionCode": 271,
+		"versionName": "2.7.1",
+		"minAPIVersion": 50004016,
+		"targetAPIVersion": 60002022,
+		"apiReleaseType": "Release",
+		"targetMinorAPIVersion": 0,
+		"targetPatchAPIVersion": 0,
+		"compileSdkVersion": "6.0.2.130",
+		"compileSdkType": "HarmonyOS",
+		"appEnvironments": [],
+		"bundleType": "app",
+		"buildMode": "debug"
+	},
+	"module": {
+		"name": "super_player",
+		"type": "har",
+		"deviceTypes": [
+			"default",
+			"tablet"
+		],
+		"packageName": "super_player",
+		"installationFree": false
+	}
+}
