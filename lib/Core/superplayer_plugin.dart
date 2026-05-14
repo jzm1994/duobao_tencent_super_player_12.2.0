@@ -159,6 +159,9 @@ class SuperPlayerPlugin implements TXPluginFlutterAPI, TXPipFlutterAPI {
   /// 获得当前界面亮度 0.0 ~ 1.0
   static Future<double?> getBrightness() async {
     DoubleMsg doubleMsg = await _nativeAPI.getBrightness();
+    if (doubleMsg.value != null) {
+      return doubleMsg.value! > 1.0 ? 1.0 : doubleMsg.value;
+    }
     return doubleMsg.value;
   }
 
@@ -167,6 +170,9 @@ class SuperPlayerPlugin implements TXPluginFlutterAPI, TXPipFlutterAPI {
   /// 获取系统界面亮度，IOS系统与界面亮度一致，安卓可能会有差异 范围：0.0 ~ 1.0
   static Future<double?> getSysBrightness() async {
     DoubleMsg doubleMsg = await _nativeAPI.getSysBrightness();
+    if (doubleMsg.value != null) {
+      return doubleMsg.value! > 1.0 ? 1.0 : doubleMsg.value;
+    }
     return doubleMsg.value;
   }
 
@@ -180,6 +186,9 @@ class SuperPlayerPlugin implements TXPluginFlutterAPI, TXPipFlutterAPI {
   /// 获得当前系统音量，范围：0.0 ~ 1.0
   static Future<double?> getSystemVolume() async {
     DoubleMsg doubleMsg = await _nativeAPI.getSystemVolume();
+    if (doubleMsg.value != null) {
+      return doubleMsg.value! > 1.0 ? 1.0 : doubleMsg.value;
+    }
     return doubleMsg.value;
   }
 

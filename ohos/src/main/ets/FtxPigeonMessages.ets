@@ -738,7 +738,7 @@ const pigeonCodec = new PigeonCodec();
 
 // ==================== Pigeon Channel Setup Helpers ====================
 
-export type PigeonHandler = (message: Object | null) => Object[];
+export type PigeonHandler = (message: Object | null) => Object[] | Promise<Object[]>;
 
 interface PigeonMessageHandler {
   onMessage(message: Object | null, reply: Reply<Object>): void;
@@ -752,7 +752,15 @@ class PigeonHandlerImpl implements PigeonMessageHandler {
   onMessage(message: Object | null, reply: Reply<Object>): void {
     try {
       const result = this.handler(message);
-      reply.reply(result);
+      if (result instanceof Promise) {
+        result.then((value: Object) => {
+          reply.reply(value);
+        }).catch((e: Error) => {
+          reply.reply(wrapError('error', String(e), null));
+        });
+      } else {
+        reply.reply(result);
+      }
     } catch (e) {
       reply.reply(wrapError('error', String(e), null));
     }

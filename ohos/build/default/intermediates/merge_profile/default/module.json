@@ -2,8 +2,8 @@
 	"app": {
 		"bundleName": "com.duobao9.duobao.hm",
 		"debug": true,
-		"versionCode": 271,
-		"versionName": "2.7.1",
+		"versionCode": 279,
+		"versionName": "2.7.9",
 		"minAPIVersion": 50004016,
 		"targetAPIVersion": 60002022,
 		"apiReleaseType": "Release",

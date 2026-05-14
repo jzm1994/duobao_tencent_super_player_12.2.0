@@ -21,6 +21,9 @@ import {
 import {
   getV2TXLivePremierShareInstance
 } from 'liteavsdk';
+import window from '@ohos.window';
+import audio from '@ohos.multimedia.audio';
+import FlutterManager from '@ohos/flutter_ohos/src/main/ets/embedding/ohos/FlutterManager';
 
 const API_PLUGIN = 'TXFlutterSuperPlayerPluginAPI';
 const API_NATIVE = 'TXFlutterNativeAPI';
@@ -41,6 +44,10 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
   private textureEntries: Map<number, SurfaceTextureEntry> = new Map();
   private downloadManager: FTXDownloadManager | null = null;
   private context: Context | null = null;
+  private currentBrightness: number = 0.5;
+  private currentVolume: number = 0.5;
+  private mainWindow: window.Window | null = null;
+  private volumeManager: audio.AudioVolumeManager | null = null;
 
   onAttachedToEngine(binding: FlutterPluginBinding): void {
     console.info("SuperPlayerPlugin onAttachedToEngine ENTER binding=" + (binding != null));
@@ -48,6 +55,7 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
     this.context = binding.getApplicationContext();
     this.pigeon = new PigeonChannelSetup(binding.getBinaryMessenger());
     this.textureRegistry = binding.getTextureRegistry();
+    this.registerVolumeListener();
 
     this.setupPluginApi();
     this.setupNativeApi();
@@ -61,6 +69,8 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
   }
 
   onDetachedFromEngine(binding: FlutterPluginBinding): void {
+    this.unregisterVolumeListener();
+    this.mainWindow = null;
     this.releaseAllPlayers();
     if (this.downloadManager) {
       this.downloadManager.destroy();
@@ -79,6 +89,7 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
   }
 
   onDetachedFromAbility(): void {
+    this.mainWindow = null;
   }
 
   // ==================== TXFlutterSuperPlayerPluginAPI ====================
@@ -177,32 +188,62 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
     const p = this.pigeon!;
 
     p.registerHostHandler(API_NATIVE, 'setBrightness', '', (msg) => {
+      const args = msg as Object[];
+      const brightnessMsg = args[0] as DoubleMsg;
+      const brightness = brightnessMsg?.value ?? 0.5;
+      this.setWindowBrightness(brightness);
       return wrapResult(null);
     });
 
     p.registerHostHandler(API_NATIVE, 'restorePageBrightness', '', (msg) => {
+      this.setWindowBrightness(-1); // -1 表示恢复系统亮度
       return wrapResult(null);
     });
 
     p.registerHostHandler(API_NATIVE, 'getBrightness', '', (msg) => {
       const r = new DoubleMsg();
-      r.value = 0.5;
+      this.ensureMainWindow();
+      if (this.mainWindow) {
+        try {
+          const brightness = this.mainWindow.getWindowProperties().brightness;
+          r.value = this.toDouble(brightness);
+        } catch (e) {
+          r.value = 0.5;
+        }
+      } else {
+        r.value = this.toDouble(-1);
+      }
       return wrapResult(r);
     });
 
     p.registerHostHandler(API_NATIVE, 'getSysBrightness', '', (msg) => {
       const r = new DoubleMsg();
-      r.value = 0.5;
+      this.ensureMainWindow();
+      if (this.mainWindow) {
+        try {
+          const brightness = this.mainWindow.getWindowProperties().brightness;
+          r.value = this.toDouble(brightness);
+        } catch (e) {
+          r.value = this.toDouble(-1);
+        }
+      } else {
+        r.value = this.toDouble(-1);
+      }
       return wrapResult(r);
     });
 
     p.registerHostHandler(API_NATIVE, 'setSystemVolume', '', (msg) => {
+      const args = msg as Object[];
+      const volumeMsg = args[0] as DoubleMsg;
+      this.setVolume(volumeMsg?.value ?? 0.5);
       return wrapResult(null);
     });
 
-    p.registerHostHandler(API_NATIVE, 'getSystemVolume', '', (msg) => {
+    p.registerHostHandler(API_NATIVE, 'getSystemVolume', '', async (msg) => {
+      const vol = await this.getVolume();
+      this.currentVolume = vol;
       const r = new DoubleMsg();
-      r.value = 0.5;
+      r.value = this.toDouble(vol);
       return wrapResult(r);
     });
 
@@ -835,6 +876,77 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
 
   // ==================== Global Settings ====================
 
+  private ensureMainWindow(): void {
+    if (this.mainWindow) return;
+    try {
+      const uiAbility = FlutterManager.getInstance().getUIAbility();
+      const windowStage = FlutterManager.getInstance().getWindowStage(uiAbility);
+      this.mainWindow = windowStage.getMainWindowSync();
+      console.info('SuperPlayerPlugin ensureMainWindow: success');
+    } catch (e) {
+      console.error('SuperPlayerPlugin ensureMainWindow error: ' + e);
+    }
+  }
+
+  private getSysBrightnessValue(): number {
+    return this.currentBrightness;
+  }
+
+  private toDouble(value: number): number {
+    return Number.isInteger(value) ? value + Number.EPSILON : value;
+
+    if (!Number.isInteger(value)) return value;
+    if (value >= 1) return 1.0 - Number.EPSILON;
+    if (value <= 0) return 0.0 + Number.EPSILON;
+    return value + Number.EPSILON;
+  }
+
+  private setWindowBrightness(brightness: number): void {
+    try {
+      this.ensureMainWindow();
+      if (!this.mainWindow) {
+        console.error('SuperPlayerPlugin setWindowBrightness: mainWindow is null');
+        return;
+      }
+      if (brightness < 0) {
+        this.mainWindow.setWindowBrightness(-1);
+      } else {
+        this.mainWindow.setWindowBrightness(brightness);
+      }
+      this.currentBrightness = brightness < 0 ? 0.5 : brightness;
+      this.sendNativeEvent(FTXEvent.EVENT_BRIGHTNESS_CHANGED);
+    } catch (e) {
+      console.error('SuperPlayerPlugin setWindowBrightness error: ' + e);
+    }
+  }
+
+  private async setVolume(volume: number): Promise<void> {
+    try {
+      const audioManager = audio.getAudioManager();
+      const maxVolume: number = await audioManager.getMaxVolume(audio.AudioVolumeType.MEDIA);
+      const minVolume: number = await audioManager.getMinVolume(audio.AudioVolumeType.MEDIA);
+      const targetVolume: number = minVolume + Math.round(volume * (maxVolume - minVolume));
+      await audioManager.setVolume(audio.AudioVolumeType.MEDIA, targetVolume);
+      this.currentVolume = volume;
+    } catch (e) {
+      console.error('SuperPlayerPlugin setVolume error: ' + e);
+    }
+  }
+
+  private async getVolume(): Promise<number> {
+    try {
+      const audioManager = audio.getAudioManager();
+      const currentVolume: number = await audioManager.getVolume(audio.AudioVolumeType.MEDIA);
+      const maxVolume: number = await audioManager.getMaxVolume(audio.AudioVolumeType.MEDIA);
+      const minVolume: number = await audioManager.getMinVolume(audio.AudioVolumeType.MEDIA);
+      if (maxVolume === minVolume) return 0.5;
+      return (currentVolume - minVolume) / (maxVolume - minVolume);
+    } catch (e) {
+      console.error('SuperPlayerPlugin getVolume error: ' + e);
+      return 0.5;
+    }
+  }
+
   private setGlobalLicense(licenceUrl: string, licenceKey: string): void {
     if (this.context) {
       try {
@@ -857,6 +969,35 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
   }
 
   // ==================== Event Callbacks to Flutter ====================
+
+  private sendNativeEvent(eventId: number): void {
+    const event: Record<string, Object> = { 'event': eventId as Object };
+    this.pigeon?.sendFlutterEvent(FLUTER_API_PLUGIN, 'onNativeEvent', '', event);
+  }
+
+  private registerVolumeListener(): void {
+    try {
+      this.volumeManager = audio.getAudioManager().getVolumeManager();
+      this.volumeManager.on('volumeChange', (volumeEvent: audio.VolumeEvent) => {
+        if (volumeEvent.volumeType === audio.AudioVolumeType.MEDIA) {
+          this.sendNativeEvent(FTXEvent.EVENT_VOLUME_CHANGED);
+        }
+      });
+    } catch (e) {
+      console.error('SuperPlayerPlugin registerVolumeListener error: ' + e);
+    }
+  }
+
+  private unregisterVolumeListener(): void {
+    try {
+      if (this.volumeManager) {
+        this.volumeManager.off('volumeChange');
+        this.volumeManager = null;
+      }
+    } catch (e) {
+      console.error('SuperPlayerPlugin unregisterVolumeListener error: ' + e);
+    }
+  }
 
   private sendVodPlayerEvent(playerId: number, event: Record<string, Object>): void {
     this.pigeon?.sendFlutterEvent(FLUTTER_API_VOD, 'onPlayerEvent', playerId.toString(), event);
@@ -882,3 +1023,4 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
     this.pigeon?.sendFlutterEvent(FLUTTER_API_DOWNLOAD, 'onPreDownloadEvent', '', event);
   }
 }
+
