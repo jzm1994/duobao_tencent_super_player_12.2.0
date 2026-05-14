@@ -327,7 +327,7 @@ class DoublePlayerMsg {
     result as List<Object?>;
     return DoublePlayerMsg(
       playerId: result[0] as int?,
-      value: result[1] as double?,
+      value: (result[1] as num?)?.toDouble(),
     );
   }
 }
@@ -472,8 +472,8 @@ class FTXVodPlayConfigPlayerMsg {
       smoothSwitchBitrate: result[8] as bool?,
       cacheMp4ExtName: result[9] as String?,
       progressInterval: result[10] as int?,
-      maxBufferSize: result[11] as double?,
-      maxPreloadSize: result[12] as double?,
+      maxBufferSize: (result[11] as num?)?.toDouble(),
+      maxPreloadSize: (result[12] as num?)?.toDouble(),
       firstStartPlayBufferTime: result[13] as int?,
       nextStartPlayBufferTime: result[14] as int?,
       overlayKey: result[15] as String?,
@@ -548,9 +548,9 @@ class FTXLivePlayConfigPlayerMsg {
     result as List<Object?>;
     return FTXLivePlayConfigPlayerMsg(
       playerId: result[0] as int?,
-      cacheTime: result[1] as double?,
-      maxAutoAdjustCacheTime: result[2] as double?,
-      minAutoAdjustCacheTime: result[3] as double?,
+      cacheTime: (result[1] as num?)?.toDouble(),
+      maxAutoAdjustCacheTime: (result[2] as num?)?.toDouble(),
+      minAutoAdjustCacheTime: (result[3] as num?)?.toDouble(),
       videoBlockThreshold: result[4] as int?,
       connectRetryCount: result[5] as int?,
       connectRetryInterval: result[6] as int?,
@@ -659,7 +659,7 @@ class TXVodDownloadMediaMsg {
     result as List<Object?>;
     return TXVodDownloadMediaMsg(
       playPath: result[0] as String?,
-      progress: result[1] as double?,
+      progress: (result[1] as num?)?.toDouble(),
       downloadState: result[2] as int?,
       userName: result[3] as String?,
       duration: result[4] as int?,
@@ -846,7 +846,7 @@ class DoubleMsg {
   static DoubleMsg decode(Object result) {
     result as List<Object?>;
     return DoubleMsg(
-      value: result[0] as double?,
+      value: (result[0] as num?)?.toDouble(),
     );
   }
 }
@@ -876,7 +876,7 @@ class PreLoadMsg {
     result as List<Object?>;
     return PreLoadMsg(
       playUrl: result[0] as String?,
-      preloadSizeMB: result[1] as double?,
+      preloadSizeMB: (result[1] as num?)?.toDouble(),
       preferredResolution: result[2] as int?,
     );
   }
@@ -930,7 +930,7 @@ class PreLoadInfoMsg {
       fileId: result[1] as String?,
       pSign: result[2] as String?,
       playUrl: result[3] as String?,
-      preloadSizeMB: result[4] as double?,
+      preloadSizeMB: (result[4] as num?)?.toDouble(),
       preferredResolution: result[5] as int?,
       tmpPreloadTaskId: result[6] as int?,
       httpHeader: (result[7] as Map<Object?, Object?>?)?.cast<String?, String?>(),
@@ -1066,16 +1066,16 @@ class SubTitleRenderModelPlayerMsg {
       canvasWidth: result[0] as int?,
       canvasHeight: result[1] as int?,
       familyName: result[2] as String?,
-      fontSize: result[3] as double?,
-      fontScale: result[4] as double?,
+      fontSize: (result[3] as num?)?.toDouble(),
+      fontScale: (result[4] as num?)?.toDouble(),
       fontColor: result[5] as int?,
       isBondFontStyle: result[6] as bool?,
-      outlineWidth: result[7] as double?,
+      outlineWidth: (result[7] as num?)?.toDouble(),
       outlineColor: result[8] as int?,
-      lineSpace: result[9] as double?,
-      startMargin: result[10] as double?,
-      endMargin: result[11] as double?,
-      verticalMargin: result[12] as double?,
+      lineSpace: (result[9] as num?)?.toDouble(),
+      startMargin: (result[10] as num?)?.toDouble(),
+      endMargin: (result[11] as num?)?.toDouble(),
+      verticalMargin: (result[12] as num?)?.toDouble(),
       playerId: result[13] as int?,
     );
   }
