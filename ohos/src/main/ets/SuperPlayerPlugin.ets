@@ -850,7 +850,10 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
     }
     const entry = this.textureEntries.get(playerId);
     if (entry) {
-      entry.release();
+      try {
+        entry.release();
+      } catch (e) {
+      }
       this.textureEntries.delete(playerId);
     }
   }
@@ -861,7 +864,11 @@ export default class SuperPlayerPlugin implements FlutterPlugin, AbilityAware {
     });
     this.players.clear();
     this.textureEntries.forEach((entry) => {
-      entry.release();
+      try {
+        entry.release();
+      } catch (e) {
+        // FlutterRenderer.release() 在部分 flutter_ohos 版本未实现，忽略即可
+      }
     });
     this.textureEntries.clear();
   }
